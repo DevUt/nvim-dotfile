@@ -763,6 +763,7 @@ require("lazy").setup({
 						exec = "g++",
 						args = {
 							"-std=c++2a",
+							"-g",
 							"-Wall",
 							"-fsanitize=undefined",
 							"-Wmaybe-uninitialized",
