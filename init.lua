@@ -52,8 +52,11 @@ vim.opt.cursorline = true
 vim.opt.scrolloff = 10
 
 -- Set tabwidth
+vim.opt.shiftwidth = 2
 vim.opt.tabstop = 2
-vim.opt.shiftwidth = 4
+vim.opt.softtabstop = 2
+vim.opt.expandtab = true
+vim.opt.smartindent = true
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -148,22 +151,15 @@ require("lazy").setup({
 		event = "VimEnter", -- Sets the loading event to 'VimEnter'
 		config = function() -- This is the function that runs, AFTER loading
 			require("which-key").setup()
-
-			-- Document existing key chains
-			require("which-key").register({
-				["<leader>c"] = { name = "[C]ode", _ = "which_key_ignore" },
-				["<leader>d"] = { name = "[D]ocument", _ = "which_key_ignore" },
-				["<leader>r"] = { name = "[R]ename", _ = "which_key_ignore" },
-				["<leader>s"] = { name = "[S]earch", _ = "which_key_ignore" },
-				["<leader>w"] = { name = "[W]orkspace", _ = "which_key_ignore" },
-				["<leader>t"] = { name = "[T]oggle", _ = "which_key_ignore" },
-				["<leader>h"] = { name = "Git [H]unk", _ = "which_key_ignore" },
-			})
-			-- visual mode
-			require("which-key").register({
-				["<leader>h"] = { "Git [H]unk" },
-			}, { mode = "v" })
 		end,
+	},
+	{
+	 "nosduco/remote-sshfs.nvim",
+	 dependencies = { "nvim-telescope/telescope.nvim" },
+	 opts = {
+		-- Refer to the configuration section below
+		-- or leave empty for defaults
+	 },
 	},
 
 	-- NOTE: Plugins can specify dependencies.
@@ -239,6 +235,7 @@ require("lazy").setup({
 			-- Enable Telescope extensions if they are installed
 			pcall(require("telescope").load_extension, "fzf")
 			pcall(require("telescope").load_extension, "ui-select")
+			pcall(require("telescope").load_extension, "remote-sshfs")
 
 			-- See `:help telescope.builtin`
 			local builtin = require("telescope.builtin")
@@ -440,6 +437,30 @@ require("lazy").setup({
 			--        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
 			local servers = {
 				clangd = {},
+				emmet_ls = {
+					filetypes = {
+						"css",
+						"eruby",
+						"html",
+						"javascript",
+						"javascriptreact",
+						"less",
+						"sass",
+						"scss",
+						"svelte",
+						"pug",
+						"typescriptreact",
+						"vue",
+					},
+					init_options = {
+						html = {
+							options = {
+								-- For possible options, see: https://github.com/emmetio/emmet/blob/master/src/config.ts#L79-L267
+								["bem.enabled"] = true,
+							},
+						},
+					},
+				},
 				-- gopls = {},
 				-- pyright = {},
 				-- rust_analyzer = {},
@@ -452,6 +473,14 @@ require("lazy").setup({
 				-- tsserver = {},
 				--
 
+				basedpyright = {
+					settings = {
+						basedpyright = {
+							typeCheckingMode = "standard",
+						},
+					},
+				},
+
 				lua_ls = {
 					-- cmd = {...},
 					-- filetypes = { ...},
@@ -463,6 +492,14 @@ require("lazy").setup({
 							},
 							-- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
 							-- diagnostics = { disable = { 'missing-fields' } },
+						},
+					},
+				},
+
+				ruff = {
+					init_options = {
+						settings = {
+							args = { "--extend-select", "F401", "--unfixable", "F401" },
 						},
 					},
 				},
@@ -513,18 +550,9 @@ require("lazy").setup({
 		},
 		opts = {
 			notify_on_error = true,
-			format_on_save = function(bufnr)
-				-- Disable "format_on_save lsp_fallback" for languages that don't
-				-- have a well standardized coding style. You can add additional
-				-- languages here or re-enable it for the disabled ones.
-				local disable_filetypes = { c = true, cpp = true }
-				return {
-					timeout_ms = 500,
-					lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
-				}
-			end,
 			formatters_by_ft = {
 				lua = { "stylua" },
+				python = { "ruff" },
 				-- Conform can also run multiple formatters sequentially
 				-- python = { "isort", "black" },
 				--
@@ -652,13 +680,12 @@ require("lazy").setup({
 		-- change the command in the config to whatever the name of that colorscheme is.
 		--
 		-- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-		"folke/tokyonight.nvim",
+		"EdenEast/nightfox.nvim",
 		priority = 1000, -- Make sure to load this before all the other start plugins.
 		init = function()
 			-- Load the colorscheme here.
 			-- Like many other themes, this one has different styles, and you could load
-			-- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-			vim.cmd.colorscheme("tokyonight-night")
+			vim.cmd.colorscheme("duskfox")
 
 			-- You can configure highlights by doing something like:
 			vim.cmd.hi("Comment gui=none")
@@ -758,11 +785,11 @@ require("lazy").setup({
 		config = function()
 			require("competitest").setup({
 				compile_command = {
-					c = { exec = "gcc", args = { "-Wall", "$(FNAME)", "-o", "$(FNOEXT)" } },
+					c = { exec = "gcc-14", args = { "-Wall", "$(FNAME)", "-o", "$(FNOEXT)" } },
 					cpp = {
-						exec = "g++",
+						exec = "g++-14",
 						args = {
-							"-std=c++2a",
+							"-std=c++2b",
 							"-g",
 							"-Wall",
 							"-fsanitize=undefined",
@@ -871,8 +898,61 @@ require("lazy").setup({
 				command = "/usr/bin/lldb-dap-18", -- adjust as needed, must be absolute path
 				name = "lldb",
 			}
-
+			dap.adapters.gdb = {
+				type = "executable",
+				command = "gdb",
+				args = { "-i", "dap" },
+			}
+			dap.adapters.cppdbg = {
+				id = "cppdbg",
+				type = "executable",
+				command = "/home/devut/Projects/extension/debugAdapters/bin/OpenDebugAD7",
+			}
+			--[[ dap.configurations.cpp = {
+				{
+					name = "Launch",
+					type = "gdb",
+					request = "launch",
+					program = function()
+						return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+					end,
+					cwd = "${workspaceFolder}",
+					stopAtBeginningOfMainSubprogram = false,
+				},
+			} ]]
 			dap.configurations.cpp = {
+				{
+					name = "Launch file",
+					type = "cppdbg",
+					request = "launch",
+					program = function()
+						return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+					end,
+					cwd = "${workspaceFolder}",
+					stopAtEntry = false,
+					setupCommands = {
+						{
+							text = "-enable-pretty-printing",
+							description = "enable pretty printing",
+							ignoreFailures = false,
+						},
+					},
+				},
+				{
+					name = "Attach to gdbserver :1234",
+					type = "cppdbg",
+					request = "launch",
+					MIMode = "gdb",
+					miDebuggerServerAddress = "localhost:1234",
+					miDebuggerPath = "/usr/bin/gdb",
+					cwd = "${workspaceFolder}",
+					program = function()
+						return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+					end,
+				},
+			}
+			dap.configurations.c = dap.configurations.cpp
+			--[[ dap.configurations.cpp = {
 				{
 					name = "Launch",
 					type = "lldb",
@@ -897,7 +977,7 @@ require("lazy").setup({
 					-- https://www.kernel.org/doc/html/latest/admin-guide/LSM/Yama.html
 					-- runInTerminal = false,
 				},
-			}
+			} ]]
 		end,
 	},
 	{
@@ -909,6 +989,9 @@ require("lazy").setup({
 		config = function()
 			require("alpha").setup(require("alpha.themes.startify").config)
 		end,
+	},
+	{
+		"kkoomen/vim-doge",
 	},
 })
 
@@ -960,3 +1043,19 @@ map("n", "<Space>bw", "<Cmd>BufferOrderByWindowNumber<CR>", opts)
 
 -- Key Binding to Toggle Explorer
 map("n", "<C-n>", "<Cmd>NvimTreeToggle<CR>", opts)
+
+-- Open certain file types with external applications
+local open_with_external_app = function()
+	local filetype = vim.fn.expand("%:e") -- Get the file extension
+	local filepath = vim.fn.expand("%:p") -- Get the absolute file path
+
+	if filetype == "png" or filetype == "jpg" or filetype == "jpeg" then
+		vim.cmd("!xdg-open " .. filepath) -- Replace xdg-open with open on macOS
+		vim.cmd("bdelete") -- Close the buffer in Neovim
+	end
+end
+
+-- Automatically call the function on BufRead events
+vim.api.nvim_create_autocmd("BufRead", {
+	callback = open_with_external_app,
+})
