@@ -58,6 +58,8 @@ vim.opt.softtabstop = 2
 vim.opt.expandtab = true
 vim.opt.smartindent = true
 
+-- VimTex
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -154,12 +156,12 @@ require("lazy").setup({
 		end,
 	},
 	{
-	 "nosduco/remote-sshfs.nvim",
-	 dependencies = { "nvim-telescope/telescope.nvim" },
-	 opts = {
-		-- Refer to the configuration section below
-		-- or leave empty for defaults
-	 },
+		"nosduco/remote-sshfs.nvim",
+		dependencies = { "nvim-telescope/telescope.nvim" },
+		opts = {
+			-- Refer to the configuration section below
+			-- or leave empty for defaults
+		},
 	},
 
 	-- NOTE: Plugins can specify dependencies.
@@ -241,7 +243,9 @@ require("lazy").setup({
 			local builtin = require("telescope.builtin")
 			vim.keymap.set("n", "<leader>sh", builtin.help_tags, { desc = "[S]earch [H]elp" })
 			vim.keymap.set("n", "<leader>sk", builtin.keymaps, { desc = "[S]earch [K]eymaps" })
-			vim.keymap.set("n", "<leader>sf", builtin.find_files, { desc = "[S]earch [F]iles" })
+			vim.keymap.set("n", "<leader>sf", function()
+				builtin.find_files({ no_ignore = true })
+			end, { desc = "[S]earch [F]iles" })
 			vim.keymap.set("n", "<leader>ss", builtin.builtin, { desc = "[S]earch [S]elect Telescope" })
 			vim.keymap.set("n", "<leader>sw", builtin.grep_string, { desc = "[S]earch current [W]ord" })
 			vim.keymap.set("n", "<leader>sg", builtin.live_grep, { desc = "[S]earch by [G]rep" })
@@ -496,13 +500,13 @@ require("lazy").setup({
 					},
 				},
 
-				ruff = {
-					init_options = {
-						settings = {
-							args = { "--extend-select", "F401", "--unfixable", "F401" },
-						},
-					},
-				},
+				-- ruff = {
+				-- 	init_options = {
+				-- 		settings = {
+				-- 			args = { "--extend-select", "F401", "--unfixable", "F401" },
+				-- 		},
+				-- 	},
+				-- },
 			}
 
 			-- Ensure the servers and tools above are installed
@@ -552,7 +556,8 @@ require("lazy").setup({
 			notify_on_error = true,
 			formatters_by_ft = {
 				lua = { "stylua" },
-				python = { "ruff" },
+				-- python = { "ruff", "basedpyright" },
+				python = { "basedpyright" },
 				-- Conform can also run multiple formatters sequentially
 				-- python = { "isort", "black" },
 				--
@@ -579,6 +584,7 @@ require("lazy").setup({
 					return "make install_jsregexp"
 				end)(),
 				dependencies = {
+					{},
 					-- `friendly-snippets` contains a variety of premade snippets.
 					--    See the README about individual language/framework/plugin snippets:
 					--    https://github.com/rafamadriz/friendly-snippets
@@ -596,6 +602,7 @@ require("lazy").setup({
 			--  nvim-cmp does not ship with all sources by default. They are split
 			--  into multiple repos for maintenance purposes.
 			"hrsh7th/cmp-nvim-lsp",
+			"hrsh7th/cmp-omni",
 			"hrsh7th/cmp-path",
 			-- Signature functionality
 			"hrsh7th/cmp-nvim-lsp-signature-help",
@@ -604,7 +611,7 @@ require("lazy").setup({
 			-- See `:help cmp`
 			local cmp = require("cmp")
 			local luasnip = require("luasnip")
-			luasnip.config.setup({})
+			luasnip.config.setup({ enable_autosnippets = true })
 
 			cmp.setup({
 				snippet = {
@@ -669,10 +676,29 @@ require("lazy").setup({
 				sources = {
 					{ name = "nvim_lsp" },
 					{ name = "luasnip" },
+					{ name = "omni" },
 					{ name = "path" },
+					{ name = "buffer" },
 					{ name = "nvim_lsp_signature_help" },
+					{ name = "calc" },
 				},
 			})
+		end,
+	},
+	{
+		"iurimateus/luasnip-latex-snippets.nvim",
+		enabled = true,
+		config = function()
+			require("luasnip-latex-snippets").setup({
+				use_treesitter = false, -- Enable Treesitter integration
+				verbose = true, -- Debugging
+			})
+			require("luasnip").config.set_config({
+				enable_autosnippets = true, -- Enables auto snippets
+			})
+			require("luasnip.loaders.from_vscode").lazy_load()
+			require("luasnip.loaders.from_lua").load()
+			-- require("luasnip.loaders.from_vscode").lazy_load()
 		end,
 	},
 	{ -- You can easily change to a different colorscheme.
@@ -749,6 +775,7 @@ require("lazy").setup({
 				--  If you are experiencing weird indenting issues, add the language to
 				--  the list of additional_vim_regex_highlighting and disabled languages for indent.
 				additional_vim_regex_highlighting = { "ruby" },
+				disable = { "latex", "tex" },
 			},
 			indent = { enable = true, disable = { "ruby" } },
 		},
@@ -993,6 +1020,27 @@ require("lazy").setup({
 	{
 		"kkoomen/vim-doge",
 	},
+	{
+		"lervag/vimtex",
+		lazy = false, -- we don't want to lazy load VimTeX
+		-- tag = "v2.15", -- uncomment to pin to a specific release
+		init = function()
+			-- VimTeX configuration goes here, e.g.
+			vim.g.vimtex_view_method = "zathura_simple"
+			vim.g.tex_flavor = "latex"
+			-- vim.g.vimtex_quickfix_mode = 0
+			vim.opt.conceallevel = 1
+			vim.g.tex_conceal = "abdmg"
+			vim.g.vimtex_syntax_enabled = 1
+			vim.g.vimtex_quickfix_open_on_warning = 0
+		end,
+	},
+	{
+		"m4xshen/hardtime.nvim",
+		lazy = false,
+		dependencies = { "MunifTanjim/nui.nvim" },
+		opts = {},
+	},
 })
 
 --  Setup Barbar keybindings
@@ -1058,4 +1106,25 @@ end
 -- Automatically call the function on BufRead events
 vim.api.nvim_create_autocmd("BufRead", {
 	callback = open_with_external_app,
+})
+
+-- My snippets for latex
+local ls = require("luasnip")
+local utils = require("luasnip-latex-snippets.util.utils")
+local is_math = utils.with_opts(utils.is_math, true) -- true to use treesitter
+local not_math = utils.with_opts(utils.not_math, true) -- true to use treesitter
+
+-- set a higher priority (defaults to 0 for most snippets)
+local min_snip = ls.parser.parse_snippet(
+	{ trig = "minl", name = "min", condition = utils.pipe({ is_math }), priority = 10 },
+	"\\min\\limits_{$1}^{$2} $0"
+)
+
+local max_snip = ls.parser.parse_snippet(
+	{ trig = "maxl", name = "min", condition = utils.pipe({ is_math }), priority = 11 },
+	"\\max\\limits_{$1}^{$2} $0"
+)
+
+ls.add_snippets("tex", { min_snip, max_snip }, {
+	type = "autosnippets",
 })
